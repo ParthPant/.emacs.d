@@ -1,0 +1,621 @@
+#+TITLE: Parth's Emacs Config
+#+AUTHOR: Parth Pant
+#+EMAIL: parthpant4@gmail.com
+
+* Package Management
+** Setup MELPA
+#+begin_src emacs-lisp
+(require 'package) 
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")))
+;;(package-refresh-contents)
+(package-initialize)
+#+end_src
+
+#+RESULTS:
+
+** Use Package
+#+begin_src emacs-lisp
+(unless (package-installed-p 'use-package)
+	(package-install 'use-package))
+(setq use-package-always-ensure t)
+#+end_src
+
+* EVIL Mode
+#+begin_src emacs-lisp
+(use-package evil
+:init      ;; tweak evil's configuration before loading it
+(setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+(setq evil-want-keybinding nil)
+(setq evil-vsplit-window-right t)
+(setq evil-split-window-below t)
+(setq evil-want-C-u-scroll t)
+(setq evil-want-C-i-jump nil)
+:config
+(evil-mode 1)
+(evil-set-initial-state 'messages-buffer-mode 'normal)
+(evil-set-initial-state 'dashboard-mode 'normal))
+
+(use-package evil-collection
+    :ensure t
+    :after evil
+    :config
+    (evil-collection-init))
+
+(use-package evil-tutor)
+
+(setq frame-resize-pixelwise t)
+#+end_src
+
+* Hydra
+#+begin_src  emacs-lisp
+(use-package hydra)
+#+end_src
+
+* Eye Candy 
+** Theme
+  #+begin_src emacs-lisp
+(use-package doom-themes
+  ; :ensure t
+    :config
+	(setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
+		doom-themes-enable-italic t)) ; if nil, italics is universally disabled
+(load-theme 'doom-dracula t)
+  #+end_src
+
+** Fonts
+   #+begin_src emacs-lisp
+(set-face-attribute 'default nil
+  :font "Source Code Pro"
+  :height 110
+  :weight 'medium)
+(set-face-attribute 'variable-pitch nil
+  :font "Roboto"
+  ;;:height 110
+  :weight 'medium)
+(set-face-attribute 'fixed-pitch nil
+  :font "Source Code Pro"
+  :height 110
+  :weight 'medium)
+;; Makes commented text and keywords italics.
+;; This is working in emacsclient but not emacs.
+;; Your font must have an italic face available.
+(set-face-attribute 'font-lock-comment-face nil
+  :slant 'italic)
+(set-face-attribute 'font-lock-keyword-face nil
+  :slant 'italic)
+
+;; Uncomment the following line if line spacing needs adjusting.
+(setq-default line-spacing 0.12)
+
+;; Needed if using emacsclient. Otherwise, your fonts will be smaller than expected.
+(add-to-list 'default-frame-alist '(font . "Source Code Pro-11"))
+;; changes certain keywords to symbols, such as lamda!
+(setq global-prettify-symbols-mode t)
+   #+end_src
+
+** All Icons
+#+begin_src emacs-lisp
+(use-package all-the-icons)
+#+end_src
+
+** DOOM Modeline
+#+begin_src emacs-lisp
+(use-package doom-modeline)
+(doom-modeline-mode 1)
+#+end_src
+
+* Which Key
+
+#+begin_src emacs-lisp
+(use-package which-key
+    :init
+    (setq which-key-side-window-location 'bottom
+	which-key-sort-order #'which-key-key-order-alpha
+	which-key-sort-uppercase-first nil
+	which-key-add-column-padding 1
+	which-key-max-display-columns nil
+	which-key-min-display-lines 10 
+	which-key-side-window-slot -10
+	which-key-side-window-max-height 0.50
+	which-key-idle-delay 0.8
+	which-key-max-description-length 25
+	which-key-allow-imprecise-window-fit t
+	which-key-separator " → " ))
+(which-key-mode)
+;; runtime performance
+(setq gc-cons-threshold (* 2 1000 1000))
+#+end_src
+  
+* ORG MODE
+Copied from DT's config
+* Defining A Few Things
+#+begin_src emacs-lisp
+
+(use-package org
+  :config
+  (setq org-default-notes-file (expand-file-name "notes.org" org-directory))
+  (setq org-ellipsis " ▼ ")
+  (setq org-log-done 'time)
+  (setq org-hide-emphasis-markers t)
+  (setq org-src-preserve-indentation nil
+      org-src-tab-acts-natively t
+      org-edit-src-content-indentation 0))
+
+(custom-set-variables
+ '(org-agenda-files '("~/Org/agenda.org")))
+
+(defun pp/orgmodeSetup ()
+  (display-line-numbers-mode 0))
+
+(defun pp/orgmode-visual-fill ()
+  (setq visual-fill-column-width 150
+	visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . pp/orgmode-visual-fill))
+
+(add-hook 'org-mode-hook 'org-indent-mode)
+(add-hook 'org-mode-hook 'pp/orgmodeSetup)
+#+end_src
+
+** Enabling Org Bullets
+Org-bullets gives us attractive bullets rather than asterisks.
+
+#+begin_src emacs-lisp
+(use-package org-bullets)
+(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+#+end_src
+
+#+begin_src emacs-lisp
+;; An example of how this works.
+;; [[arch-wiki:Name_of_Page][Description]]
+(setq org-link-abbrev-alist    ; This overwrites the default Doom org-link-abbrev-list
+        '(("google" . "http://www.google.com/search?q=")
+          ("arch-wiki" . "https://wiki.archlinux.org/index.php/")
+          ("ddg" . "https://duckduckgo.com/?q=")
+          ("wiki" . "https://en.wikipedia.org/wiki/")))
+#+end_src
+
+** Org Todo Keywords
+This lets us create the various TODO tags that we can use in Org.
+   
+#+begin_src emacs-lisp
+  (setq org-todo-keywords        ; This overwrites the default Doom org-todo-keywords
+          '((sequence
+             "TODO(t)"           ; A task that is ready to be tackled
+             "BLOG(b)"           ; Blog writing assignments
+             "PROJ(p)"           ; A project that contains other tasks
+             "WAIT(w)"           ; Something is holding up this task
+             "|"                 ; The pipe necessary to separate "active" states and "inactive" states
+             "DONE(d)"           ; Task has been completed
+             "CANCELLED(c)" )))  ; Task has been cancelled
+#+end_src
+
+** Source Code Block Tag Expansion
+Org-tempo is a package that allows for '<s' followed by TAB to expand to a begin_src tag.  Other expansions available include:
+
+| Typing the below + TAB | Expands to ...                          |
+|------------------------+-----------------------------------------|
+| <a                     | '#+BEGIN_EXPORT ascii' … '#+END_EXPORT  |
+| <c                     | '#+BEGIN_CENTER' … '#+END_CENTER'       |
+| <C                     | '#+BEGIN_COMMENT' … '#+END_COMMENT'     |
+| <e                     | '#+BEGIN_EXAMPLE' … '#+END_EXAMPLE'     |
+| <E                     | '#+BEGIN_EXPORT' … '#+END_EXPORT'       |
+| <h                     | '#+BEGIN_EXPORT html' … '#+END_EXPORT'  |
+| <l                     | '#+BEGIN_EXPORT latex' … '#+END_EXPORT' |
+| <q                     | '#+BEGIN_QUOTE' … '#+END_QUOTE'         |
+| <s                     | '#+BEGIN_SRC' … '#+END_SRC'             |
+| <v                     | '#+BEGIN_VERSE' … '#+END_VERSE'         |
+
+#+begin_src emacs-lisp
+(use-package org-tempo
+  :ensure nil) ;; tell use-package not to try to install org-tempo since it's already there.
+#+end_src
+
+** Source Code Block Syntax Highlighting
+We want the same syntax highlighting in source blocks as in the native language files.
+
+#+begin_src emacs-lisp
+(setq org-src-fontify-natively t
+    org-src-tab-acts-natively t
+    org-confirm-babel-evaluate nil
+    org-edit-src-content-indentation 0)
+#+end_src
+
+** Automatically Create Table of Contents
+Toc-org helps you to have an up-to-date table of contents in org files without exporting (useful useful for README files on GitHub).  Use :TOC: to create the table.
+
+#+begin_src emacs-lisp
+  (use-package toc-org
+    :commands toc-org-enable
+    :init (add-hook 'org-mode-hook 'toc-org-enable))
+#+end_src
+
+** Make M-RET Not Add Blank Lines
+
+#+begin_src emacs-lisp
+(setq org-blank-before-new-entry (quote ((heading . nil)
+                                         (plain-list-item . nil))))
+#+end_src
+
+* Generel Keybindings
+general.el make setting up keybinding a bit easy
+
+#+begin_src emacs-lisp
+(use-package general
+    :ensure t
+    :config
+    (general-create-definer pp/leaderKeys
+      :keymaps '(normal insert visual emacs)
+      :prefix "SPC"
+      :global-prefix "C-SPC")
+
+    (pp/leaderKeys
+      "t" '(:ignore t :which-key "toggles")
+      "t t" '(counsel-load-theme :which-key "choose themes"))
+    (general-evil-setup t))
+#+end_src
+
+** General
+#+begin_src emacs-lisp
+(pp/leaderKeys
+    "SPC"   '(counsel-M-x :which-key "M-x")
+    "c c"   '(compile :which-key "Compile")
+    "c C"   '(recompile :which-key "Recompile")
+    "h r r" '((lambda () (interactive) (load-file "~/.emacs.d/init.el")) :which-key "Reload emacs config")
+    "t l"   '(toggle-truncate-lines :which-key "Toggle truncate lines"))
+#+end_src
+
+** OrgMode
+#+begin_src emacs-lisp
+(pp/leaderKeys
+       "m *"   '(org-ctrl-c-rtar :which-key "Org-ctrl-c-star")
+       "m +"   '(org-ctrl-c-minus :which-key "Org-ctrl-c-minus")
+       "m ."   '(counsel-org-goto :which-key "Counsel org goto")
+       "m e"   '(org-export-dispatch :which-key "Org export dispatch")
+       "m f"   '(org-footnote-new :which-key "Org footnote new")
+       "m h"   '(org-toggle-heading :which-key "Org toggle heading")
+       "m i"   '(org-toggle-item :which-key "Org toggle item")
+       "m n"   '(org-store-link :which-key "Org store link")
+       "m o"   '(org-set-property :which-key "Org set property")
+       "m t"   '(org-todo :which-key "Org todo")
+       "m x"   '(org-toggle-checkbox :which-key "Org toggle checkbox")
+       "m B"   '(org-babel-tangle :which-key "Org babel tangle")
+       "m I"   '(org-toggle-inline-images :which-key "Org toggle inline imager")
+       "m T"   '(org-todo-list :which-key "Org todo list")
+       "o a"   '(org-agenda :which-key "Org agenda")
+       )
+#+end_src
+
+** Dired
+#+begin_src emacs-lisp
+(use-package all-the-icons-dired)
+(use-package dired-open)
+(use-package peep-dired)
+
+(pp/leaderKeys
+    "d d" '(dired :which-key "Open dired")
+    "d j" '(dired-jump :which-key "Dired jump to current")
+    "d p" '(peep-dired :which-key "Peep-dired"))
+
+(with-eval-after-load 'dired
+  ;;(define-key dired-mode-map (kbd "M-p") 'peep-dired)
+  (evil-define-key 'normal dired-mode-map (kbd "h") 'dired-up-directory)
+  (evil-define-key 'normal dired-mode-map (kbd "l") 'dired-open-file) ; use dired-find-file instead if not using dired-open package
+  (evil-define-key 'normal peep-dired-mode-map (kbd "j") 'peep-dired-next-file)
+  (evil-define-key 'normal peep-dired-mode-map (kbd "k") 'peep-dired-prev-file))
+
+(add-hook 'peep-dired-hook 'evil-normalize-keymaps)
+;; Get file icons in dired
+(add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
+;; With dired-open plugin, you can launch external programs for certain extensions
+;; For example, I set all .png files to open in 'sxiv' and all .mp4 files to open in 'mpv'
+(setq dired-open-extensions '(("jpg" . "sxiv")
+                              ("png" . "sxiv")
+                              ("svg" . "inkscape")
+                              ("gif" . "sxiv")
+                              ("pdf" . "evince")
+                              ("mkv" . "vlc")
+                              ("mp4" . "vlc")))
+#+end_src
+
+** Files
+#+begin_src emacs-lisp
+(pp/leaderKeys
+    "."     '(projectile-find-file :which-key "Find file in same project")
+    ">"     '(find-file :which-key "Find file")
+    "f f"   '(find-file :which-key "Find file")
+    "f r"   '(counsel-recentf :which-key "Recent files")
+    "f s"   '(save-buffer :which-key "Save file")
+    "f u"   '(sudo-edit-find-file :which-key "Sudo find file")
+    "f C"   '(copy-file :which-key "Copy file")
+    "f D"   '(delete-file :which-key "Delete file")
+    "f R"   '(rename-file :which-key "Rename file")
+    "f S"   '(write-file :which-key "Save file as...")
+    "f U"   '(sudo-edit :which-key "Sudo edit file"))
+#+end_src
+
+** Buffers
+#+begin_src emacs-lisp
+(pp/leaderKeys
+    ","     '(counsel-projectile-switch-to-buffer :which-key "Switch to buffer in same project")
+    "<"     '(counsel-switch-buffer :which-key "Switch between all buffers")
+    "b b"   '(ibuffer :which-key "Ibuffer")
+    "b c"   '(clone-indirect-buffer-other-window :which-key "Clone indirect buffer other window")
+    "b k"   '(kill-current-buffer :which-key "Kill current buffer")
+    "b n"   '(next-buffer :which-key "Next buffer")
+    "b p"   '(previous-buffer :which-key "Previous buffer")
+    "b B"   '(ibuffer-list-buffers :which-key "Ibuffer list buffers")
+    "b K"   '(kill-buffer :which-key "Kill buffer"))
+#+end_src
+
+** Zooming in/out
+   #+begin_src emacs-lisp
+;; zoom in/out like we do everywhere else.
+(global-set-key (kbd "C-=") 'text-scale-increase)
+(global-set-key (kbd "C--") 'text-scale-decrease)
+(global-set-key (kbd "<C-wheel-up>") 'text-scale-increase)
+(global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
+   #+end_src
+
+* Ivy/Counsel/Swiper
+#+begin_src emacs-lisp
+(use-package counsel
+  :after ivy
+  :config (counsel-mode))
+
+(use-package ivy
+  :defer 0.1
+  :diminish
+  :bind
+  (("C-c C-r" . ivy-resume)
+   ("C-x B" . ivy-switch-buffer-other-window))
+  :custom
+  (setq ivy-count-format "(%d/%d) ")
+  (setq ivy-use-virtual-buffers t)
+  (setq enable-recursive-minibuffers t)
+  :config
+  (ivy-mode))
+
+(use-package all-the-icons-ivy-rich
+  :ensure t
+  :init (all-the-icons-ivy-rich-mode 1))
+
+(use-package ivy-rich
+  :after counsel
+  :init (setq ivy-rich-path-style 'abbrev
+              ivy-virtual-abbreviate 'full)
+  :config (ivy-rich-mode))
+
+(use-package swiper
+  :after ivy
+  :bind (("C-s" . swiper)
+         ("C-r" . swiper)))
+#+end_src
+
+* Git Gutter
+#+begin_src emacs-lisp
+(use-package git-gutter
+  :diminish
+  :hook ((text-mode . git-gutter-mode)
+         (prog-mode . git-gutter-mode))
+  :config
+  (setq git-gutter:update-interval 2)
+  (setq git-gutter:modified-sign "≡")
+  (setq git-gutter:added-sign "≡")
+  (setq git-gutter:deleted-sign "≡")
+  (set-face-foreground 'git-gutter:added "LightGreen")
+  (set-face-foreground 'git-gutter:modified "LightGoldenrod")
+  (set-face-foreground 'git-gutter:deleted "LightCoral"))
+#+end_src
+
+* Projectile
+#+begin_src emacs-lisp
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :custom ((projectile-completion-system 'ivy))
+  :bind-keymap
+    ("C-c p" . projectile-command-map)
+  :init
+  (when (file-directory-p "~/dev")
+    (setq projectile-project-search-path '("~/dev/")))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(use-package counsel-projectile
+  :config (counsel-projectile-mode))
+#+end_src
+
+* Magit
+#+begin_src emacs-lisp
+;; (defun me/magit-status ()
+;;   "removes --git-dir and --work-tree in `magit-git-global-arguments' and calls `magit-status'"
+;;   (interactive)
+;;   (require 'magit-git)
+;;   (setq magit-git-global-arguments (remove bare-git-dir magit-git-global-arguments))
+;;   (setq magit-git-global-arguments (remove bare-work-tree magit-git-global-arguments))
+;;   (call-interactively 'magit-status))
+
+;; optional: this is the evil state that evil-magit will use
+(setq evil-magit-state 'normal)
+;; optional: disable additional bindings for yanking text
+(setq evil-magit-use-y-for-yank nil)
+(use-package magit
+  :commands (magit-status magit-get-current-branch)
+  :custom
+    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+(nvmap :prefix "SPC"
+       "g g"   '(magit :which-key "Run magit (magit-status)"))
+#+end_src
+
+* Dashboard
+#+begin_src emacs-lisp
+(use-package dashboard
+  :init      ;; tweak dashboard config before loading it
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-file-icons t)
+  ;;(setq dashboard-banner-logo-title "Emacs Is More Than A Text Editor!")
+  ;;(setq dashboard-startup-banner 'logo) ;; use standard emacs logo as banner
+  (setq dashboard-startup-banner "~/.emacs.d/parth.png")  ;; use custom image as banner
+  (setq dashboard-center-content nil) ;; set to 't' for centered content
+  (setq dashboard-items '((recents . 5)
+                          (agenda . 5 )
+                          (bookmarks . 3)
+                          (projects . 3)
+                          (registers . 3)))
+  :config
+  (dashboard-setup-startup-hook)
+  (display-line-numbers-mode 0)
+  (dashboard-modify-heading-icons '((recents . "file-text")
+			      (bookmarks . "book"))))
+#+end_src
+
+* Startup Performance
+** Garbage Collection
+#+begin_src emacs-lisp
+;; Using garbage magic hack.
+ (use-package gcmh
+   :config
+   (gcmh-mode 1))
+;; Setting garbage collection threshold
+(setq gc-cons-threshold 402653184
+      gc-cons-percentage 0.6)
+
+;; Profile emacs startup
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "*** Emacs loaded in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time before-init-time)))
+                     gcs-done)))
+
+;; Silence compiler warnings as they can be pretty disruptive
+(setq comp-async-report-warnings-errors nil)
+(if (boundp 'comp-deferred-compilation)
+    (setq comp-deferred-compilation nil)
+    (setq native-comp-deferred-compilation nil))
+;; In noninteractive sessions, prioritize non-byte-compiled source files to
+;; prevent the use of stale byte-code. Otherwise, it saves us a little IO time
+;; to skip the mtime checks on every *.elc file.
+(setq load-prefer-newer noninteractive)
+#+end_src
+
+* Neotree
+#+begin_src emacs-lisp
+;; Function for setting a fixed width for neotree.
+;; Defaults to 25 but I make it a bit longer (35) in the 'use-package neotree'.
+(defcustom neo-window-width 25
+  "*Specifies the width of the NeoTree window."
+  :type 'integer
+  :group 'neotree)
+
+(use-package neotree
+  :init
+  (setq neo-smart-open t
+        neo-window-width 30
+        neo-theme (if (display-graphic-p) 'icons 'arrow)
+        ;;neo-window-fixed-size nil
+        inhibit-compacting-font-caches t
+        projectile-switch-project-action 'neotree-projectile-action) 
+        ;; truncate long file names in neotree
+        (add-hook 'neo-after-create-hook
+           #'(lambda (_)
+               (with-current-buffer (get-buffer neo-buffer-name)
+                 (setq truncate-lines t)
+                 (setq word-wrap nil)
+                 (make-local-variable 'auto-hscroll-mode)
+                 (setq auto-hscroll-mode nil)))))
+
+;; show hidden files
+(setq-default neo-show-hidden-files t)
+
+(nvmap :prefix "SPC"
+       "t n"   '(neotree-toggle :which-key "Toggle neotree file viewer")
+       "d n"   '(neotree-dir :which-key "Open directory in neotree"))
+
+#+end_src
+
+* Language Support
+** Language Servers
+#+begin_src emacs-lisp
+(use-package lsp-mode
+  :commands (lsp lsp-deferred)
+  :init
+  (setq lsp-keymap-prefix "C-c l")
+  :config
+  (lsp-enable-which-key-integration t))
+
+(use-package lsp-ui
+  :hook (lsp-mode . lsp-ui-mode))
+
+(use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
+;;(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+#+end_src
+
+** Company Mode
+#+begin_src emacs-lisp
+(use-package company
+  :after lsp-mode
+  :hook (lsp-mode . company-mode)
+  :bind (:map company-active-map
+	      ("<tab>" . company-complete-selection))
+        (:map lsp-mode-map
+	      ("<tab>" . company-indent-or-complete-common))
+  :custom
+  (company-minimum-prefix-length 3)
+  (company-idle-delay 0.0))
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
+#+end_src
+
+** C/C++
+#+begin_src emacs-lisp
+(add-hook 'c-mode-hook 'lsp-deferred)
+(add-hook 'c++-mode-hook 'lsp-deferred)
+#+end_src
+
+** Markdown
+#+begin_src emacs-lisp
+(use-package markdown-mode
+  :mode "\\.md\\'"
+  :config
+  (setq markdown-command "marked")
+  (defun pp/set-markdown-header-font-sizes ()
+    (dolist (face '((markdown-header-face-1 . 1.2)
+                    (markdown-header-face-2 . 1.1)
+                    (markdown-header-face-3 . 1.0)
+                    (markdown-header-face-4 . 1.0)
+                    (markdown-header-face-5 . 1.0)))
+      (set-face-attribute (car face) nil :weight 'normal :height (cdr face))))
+
+  (defun pp/markdown-mode-hook ()
+    (dw/set-markdown-header-font-sizes))
+
+  (add-hook 'markdown-mode-hook 'dw/markdown-mode-hook))
+#+end_src
+
+* Misc
+** Delete Selection Mode
+#+begin_src emacs-lisp
+    (delete-selection-mode t)
+#+end_src
+  
+** Remove Toolbars
+#+begin_src emacs-lisp
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+#+end_src
+
+** Line Numbers
+#+begin_src emacs-lisp
+(global-display-line-numbers-mode 1)
+(setq display-line-numbers 'relative)
+(global-visual-line-mode t)
+#+end_src
