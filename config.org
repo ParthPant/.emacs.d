@@ -68,15 +68,15 @@
    #+begin_src emacs-lisp
 (set-face-attribute 'default nil
   :font "Source Code Pro"
-  :height 110
+  :height 120
   :weight 'medium)
 (set-face-attribute 'variable-pitch nil
   :font "Roboto"
-  ;;:height 110
+  :height 120
   :weight 'medium)
 (set-face-attribute 'fixed-pitch nil
   :font "Source Code Pro"
-  :height 110
+  :height 120
   :weight 'medium)
 ;; Makes commented text and keywords italics.
 ;; This is working in emacsclient but not emacs.
@@ -259,6 +259,14 @@ general.el make setting up keybinding a bit easy
     (general-evil-setup t))
 #+end_src
 
+** Hunks
+#+begin_src emacs-lisp
+(pp/leaderKeys
+    "] g"   '(git-gutter:next-hunk :which-key "Next hunk")
+    "[ g"   '(git-gutter:previous-hunk :which-key "Prev hunk")
+    "g s"   '(git-gutter:stage-hunk :which-key "Stage hunk")
+    "g r"   '(git-gutter:revert-hunk :which-key "Revert hunk"))
+#+end_src
 ** General
 #+begin_src emacs-lisp
 (pp/leaderKeys
@@ -404,13 +412,29 @@ general.el make setting up keybinding a bit easy
          (prog-mode . git-gutter-mode))
   :config
   (setq git-gutter:update-interval 2)
-  (setq git-gutter:modified-sign "≡")
-  (setq git-gutter:added-sign "≡")
-  (setq git-gutter:deleted-sign "≡")
   (set-face-foreground 'git-gutter:added "LightGreen")
-  (set-face-foreground 'git-gutter:modified "LightGoldenrod")
-  (set-face-foreground 'git-gutter:deleted "LightCoral"))
-#+end_src
+  (set-face-foreground 'git-gutter:modified "Blue")
+  (set-face-foreground 'git-gutter:deleted "Red"))
+
+(use-package git-gutter-fringe
+  :diminish git-gutter-mode
+  :after git-gutter
+  :demand fringe-helper
+  :config
+  ;; subtle diff indicators in the fringe
+  ;; places the git gutter outside the margins.
+  (setq-default fringes-outside-margins t)
+  ;; thin fringe bitmaps
+  (define-fringe-bitmap 'git-gutter-fr:added
+  [224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224]
+  nil nil 'center)
+  (define-fringe-bitmap 'git-gutter-fr:modified
+  [224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224]
+  nil nil 'center)
+  (define-fringe-bitmap 'git-gutter-fr:deleted
+  [0 0 0 0 0 0 0 0 0 0 0 0 0 128 192 224 240 248]
+  nil nil 'center))
+  #+end_src
 
 * Projectile
 #+begin_src emacs-lisp
