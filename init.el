@@ -7,14 +7,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(org-agenda-files '("~/Org/agenda.org"))
  '(package-selected-packages
-   '(git-gutter-fringe treemacs git-gutter+ git-gutter org-mode visual-fill-column company c-mode c++-mode lsp-clients lsp-ui lsp-mode hydra all-the-icons-ivy-rich evil-magit counsel-projectile ivy-rich counsel neotree dashboard projectile gcmh doom-modeline toc-org org-bullets evil-tutor evil-collection evil use-package))
- '(safe-local-variable-values
-   '((c-file-offsets
-      (innamespace . 0)
-      (inline-open . 0)
-      (case-label . +)))))
+   '(treemacs-magit treemacs-icons-dired treemacs-projectile treemacs-evil dired which-key vterm visual-fill-column use-package treemacs toc-org peep-dired org-bullets no-littering neotree magit lsp-ui lsp-ivy git-gutter-fringe git-gutter+ general gcmh evil-tutor evil-numbers evil-collection eterm-256color doom-themes doom-modeline dired-open dashboard counsel-projectile company-box all-the-icons-ivy-rich all-the-icons-dired)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

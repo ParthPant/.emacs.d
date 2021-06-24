@@ -1,9 +1,9 @@
-#+TITLE: Parth's Emacs Config
++TITLE: Parth's Emacs Config
 #+AUTHOR: Parth Pant
 #+EMAIL: parthpant4@gmail.com
 
-* Package Management
-** Setup MELPA
+* package management
+** setup melpa
 #+begin_src emacs-lisp
 (require 'package) 
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
@@ -13,29 +13,67 @@
 (package-initialize)
 #+end_src
 
-#+RESULTS:
-
-** Use Package
+** use package
 #+begin_src emacs-lisp
 (unless (package-installed-p 'use-package)
 	(package-install 'use-package))
 (setq use-package-always-ensure t)
 #+end_src
 
-* EVIL Mode
+* startup performance
+** garbage collection
+#+begin_src emacs-lisp
+;; using garbage magic hack.
+ (use-package gcmh
+   :config
+   (gcmh-mode 1))
+;; setting garbage collection threshold
+(setq gc-cons-threshold (* 50 1000 1000) 
+      gc-cons-percentage 0.6)
+
+;; profile emacs startup
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "*** emacs loaded in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time before-init-time)))
+                     gcs-done)))
+
+;; silence compiler warnings as they can be pretty disruptive
+(setq comp-async-report-warnings-errors nil)
+(if (boundp 'comp-deferred-compilation)
+    (setq comp-deferred-compilation nil)
+    (setq native-comp-deferred-compilation nil))
+;; in noninteractive sessions, prioritize non-byte-compiled source files to
+;; prevent the use of stale byte-code. otherwise, it saves us a little io time
+;; to skip the mtime checks on every *.elc file.
+(setq load-prefer-newer noninteractive)
+#+end_src
+
+* no littering
+#+begin_src emacs-lisp
+(use-package no-littering)
+
+(setq auto-save-file-name-transforms
+      `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+#+end_src
+
+* evil mode
 #+begin_src emacs-lisp
 (use-package evil
-:init      ;; tweak evil's configuration before loading it
-(setq evil-want-integration t) ;; This is optional since it's already set to t by default.
-(setq evil-want-keybinding nil)
-(setq evil-vsplit-window-right t)
-(setq evil-split-window-below t)
-(setq evil-want-C-u-scroll t)
-(setq evil-want-C-i-jump nil)
-:config
-(evil-mode 1)
-(evil-set-initial-state 'messages-buffer-mode 'normal)
-(evil-set-initial-state 'dashboard-mode 'normal))
+  :ensure t
+  :init      ;; tweak evil's configuration before loading it
+  (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+  (setq evil-want-keybinding nil)
+  (setq evil-vsplit-window-right t)
+  (setq evil-split-window-below t)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-want-C-i-jump nil)
+  :config
+  (evil-mode 1)
+  (evil-set-initial-state 'messages-buffer-mode 'normal)
+  (evil-set-initial-state 'dashboard-mode 'normal))
 
 (use-package evil-collection
     :ensure t
@@ -46,37 +84,44 @@
 (use-package evil-tutor)
 
 (setq frame-resize-pixelwise t)
-#+end_src
 
-* Hydra
-#+begin_src  emacs-lisp
-(use-package hydra)
-#+end_src
-
-* Eye Candy 
-** Theme
-  #+begin_src emacs-lisp
-(use-package doom-themes
-  ; :ensure t
-    :config
-	(setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
-		doom-themes-enable-italic t)) ; if nil, italics is universally disabled
-(load-theme 'doom-dracula t)
+(setq redisplay-dont-pause t
+  scroll-margin 1
+  scroll-step 1
+  scroll-conservatively 10000
+  scroll-preserve-screen-position 1)
   #+end_src
 
-** Fonts
+* hydra
+#+begin_src  emacs-lisp
+(use-package hydra
+  :defer t)
+#+end_src
+
+* eye candy 
+** theme
+  #+begin_src emacs-lisp
+(use-package doom-themes
+    :ensure t
+    :init
+	(setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
+		doom-themes-enable-italic t)) ; if nil, italics is universally disabled
+(load-theme 'doom-one t)
+  #+end_src
+  
+** fonts
    #+begin_src emacs-lisp
 (set-face-attribute 'default nil
   :font "Source Code Pro"
-  :height 120
+  :height 150
   :weight 'medium)
 (set-face-attribute 'variable-pitch nil
   :font "Roboto"
-  :height 120
+  :height 150
   :weight 'medium)
 (set-face-attribute 'fixed-pitch nil
   :font "Source Code Pro"
-  :height 120
+  :height 150
   :weight 'medium)
 ;; Makes commented text and keywords italics.
 ;; This is working in emacsclient but not emacs.
@@ -90,27 +135,27 @@
 (setq-default line-spacing 0.12)
 
 ;; Needed if using emacsclient. Otherwise, your fonts will be smaller than expected.
-(add-to-list 'default-frame-alist '(font . "Source Code Pro-11"))
+;;(add-to-list 'default-frame-alist '(font . "Source Code Pro-11"))
 ;; changes certain keywords to symbols, such as lamda!
 (setq global-prettify-symbols-mode t)
    #+end_src
 
-** All Icons
+** all icons
 #+begin_src emacs-lisp
 (use-package all-the-icons)
 #+end_src
 
-** DOOM Modeline
+** DOOM modeline
 #+begin_src emacs-lisp
 (use-package doom-modeline)
 (doom-modeline-mode 1)
 #+end_src
 
-* Which Key
-
+* which key
 #+begin_src emacs-lisp
 (use-package which-key
-    :init
+    :defer 0
+    :config
     (setq which-key-side-window-location 'bottom
 	which-key-sort-order #'which-key-key-order-alpha
 	which-key-sort-uppercase-first nil
@@ -124,17 +169,22 @@
 	which-key-allow-imprecise-window-fit t
 	which-key-separator " → " ))
 (which-key-mode)
-;; runtime performance
-(setq gc-cons-threshold (* 2 1000 1000))
 #+end_src
   
-* ORG MODE
+* org mode
 Copied from DT's config
-* Defining A Few Things
+** defining a few things
 #+begin_src emacs-lisp
+(defun pp/removeLineNumbers ()
+  (display-line-numbers-mode 0))
 
 (use-package org
+  :pin org
+  :hook (org-mode . org-indent-mode)
   :config
+  (message "org-mode loaded")
+  (add-hook 'org-mode-hook #'pp/removeLineNumbers)
+  (setq org-agenda-files '("~/Org/agenda.org"))
   (setq org-default-notes-file (expand-file-name "notes.org" org-directory))
   (setq org-ellipsis " ▼ ")
   (setq org-log-done 'time)
@@ -142,12 +192,6 @@ Copied from DT's config
   (setq org-src-preserve-indentation nil
       org-src-tab-acts-natively t
       org-edit-src-content-indentation 0))
-
-(custom-set-variables
- '(org-agenda-files '("~/Org/agenda.org")))
-
-(defun pp/orgmodeSetup ()
-  (display-line-numbers-mode 0))
 
 (defun pp/orgmode-visual-fill ()
   (setq visual-fill-column-width 150
@@ -157,210 +201,225 @@ Copied from DT's config
 (use-package visual-fill-column
   :hook (org-mode . pp/orgmode-visual-fill))
 
-(add-hook 'org-mode-hook 'org-indent-mode)
-(add-hook 'org-mode-hook 'pp/orgmodeSetup)
 #+end_src
 
-** Enabling Org Bullets
+** enabling org bullets
 Org-bullets gives us attractive bullets rather than asterisks.
 
 #+begin_src emacs-lisp
-(use-package org-bullets)
-(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+(use-package org-bullets
+  :hook (org-mode . org-bullets-mode))
+;;(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
 #+end_src
 
 #+begin_src emacs-lisp
 ;; An example of how this works.
 ;; [[arch-wiki:Name_of_Page][Description]]
+(with-eval-after-load 'org
 (setq org-link-abbrev-alist    ; This overwrites the default Doom org-link-abbrev-list
         '(("google" . "http://www.google.com/search?q=")
           ("arch-wiki" . "https://wiki.archlinux.org/index.php/")
           ("ddg" . "https://duckduckgo.com/?q=")
-          ("wiki" . "https://en.wikipedia.org/wiki/")))
+          ("wiki" . "https://en.wikipedia.org/wiki/"))))
 #+end_src
 
-** Org Todo Keywords
+** org Todo Keywords
 This lets us create the various TODO tags that we can use in Org.
    
 #+begin_src emacs-lisp
-  (setq org-todo-keywords        ; This overwrites the default Doom org-todo-keywords
-          '((sequence
-             "TODO(t)"           ; A task that is ready to be tackled
-             "BLOG(b)"           ; Blog writing assignments
-             "PROJ(p)"           ; A project that contains other tasks
-             "WAIT(w)"           ; Something is holding up this task
-             "|"                 ; The pipe necessary to separate "active" states and "inactive" states
-             "DONE(d)"           ; Task has been completed
-             "CANCELLED(c)" )))  ; Task has been cancelled
+(with-eval-after-load 'org
+    (setq org-todo-keywords        ; This overwrites the default Doom org-todo-keywords
+	    '((sequence
+	    "TODO(t)"           ; A task that is ready to be tackled
+	    "BLOG(b)"           ; Blog writing assignments
+	    "PROJ(p)"           ; A project that contains other tasks
+	    "WAIT(w)"           ; Something is holding up this task
+	    "|"                 ; The pipe necessary to separate "active" states and "inactive" states
+	    "DONE(d)"           ; Task has been completed
+	    "cancelled(c)" ))))  ; task has been cancelled
 #+end_src
 
-** Source Code Block Tag Expansion
-Org-tempo is a package that allows for '<s' followed by TAB to expand to a begin_src tag.  Other expansions available include:
+** source code block tag expansion
+org-tempo is a package that allows for '<s' followed by tab to expand to a begin_src tag.  other expansions available include:
 
-| Typing the below + TAB | Expands to ...                          |
+| typing the below + tab | expands to ...                          |
 |------------------------+-----------------------------------------|
-| <a                     | '#+BEGIN_EXPORT ascii' … '#+END_EXPORT  |
-| <c                     | '#+BEGIN_CENTER' … '#+END_CENTER'       |
-| <C                     | '#+BEGIN_COMMENT' … '#+END_COMMENT'     |
-| <e                     | '#+BEGIN_EXAMPLE' … '#+END_EXAMPLE'     |
-| <E                     | '#+BEGIN_EXPORT' … '#+END_EXPORT'       |
-| <h                     | '#+BEGIN_EXPORT html' … '#+END_EXPORT'  |
-| <l                     | '#+BEGIN_EXPORT latex' … '#+END_EXPORT' |
-| <q                     | '#+BEGIN_QUOTE' … '#+END_QUOTE'         |
-| <s                     | '#+BEGIN_SRC' … '#+END_SRC'             |
-| <v                     | '#+BEGIN_VERSE' … '#+END_VERSE'         |
+| <a                     | '#+begin_export ascii' … '#+end_export  |
+| <c                     | '#+begin_center' … '#+end_center'       |
+| <c                     | '#+begin_comment' … '#+end_comment'     |
+| <e                     | '#+begin_example' … '#+end_example'     |
+| <e                     | '#+begin_export' … '#+end_export'       |
+| <h                     | '#+begin_export html' … '#+end_export'  |
+| <l                     | '#+begin_export latex' … '#+end_export' |
+| <q                     | '#+begin_quote' … '#+end_quote'         |
+| <s                     | '#+begin_src' … '#+end_src'             |
+| <v                     | '#+begin_verse' … '#+end_verse'         |
 
 #+begin_src emacs-lisp
 (use-package org-tempo
+  :after org
   :ensure nil) ;; tell use-package not to try to install org-tempo since it's already there.
 #+end_src
 
-** Source Code Block Syntax Highlighting
-We want the same syntax highlighting in source blocks as in the native language files.
+** source code block syntax highlighting
+we want the same syntax highlighting in source blocks as in the native language files.
 
 #+begin_src emacs-lisp
-(setq org-src-fontify-natively t
-    org-src-tab-acts-natively t
-    org-confirm-babel-evaluate nil
-    org-edit-src-content-indentation 0)
+(with-eval-after-load 'org
+    (setq org-src-fontify-natively t
+	org-src-tab-acts-natively t
+	org-confirm-babel-evaluate nil
+	org-edit-src-content-indentation 0))
 #+end_src
 
-** Automatically Create Table of Contents
-Toc-org helps you to have an up-to-date table of contents in org files without exporting (useful useful for README files on GitHub).  Use :TOC: to create the table.
+** automatically create table of contents
+toc-org helps you to have an up-to-date table of contents in org files without exporting (useful useful for readme files on github).  use :toc: to create the table.
 
 #+begin_src emacs-lisp
-  (use-package toc-org
-    :commands toc-org-enable
-    :init (add-hook 'org-mode-hook 'toc-org-enable))
+(use-package toc-org
+  :after org
+  :commands toc-org-enable
+  :init (add-hook 'org-mode-hook 'toc-org-enable))
 #+end_src
 
-** Make M-RET Not Add Blank Lines
+** make m-ret not add blank lines
 
 #+begin_src emacs-lisp
-(setq org-blank-before-new-entry (quote ((heading . nil)
-                                         (plain-list-item . nil))))
+(with-eval-after-load 'org
+    (setq org-blank-before-new-entry (quote ((heading . nil)
+					    (plain-list-item . nil)))))
 #+end_src
 
-* Generel Keybindings
+* generel keybindings
 general.el make setting up keybinding a bit easy
 
 #+begin_src emacs-lisp
 (use-package general
     :ensure t
+    :after evil
     :config
-    (general-create-definer pp/leaderKeys
+    (general-create-definer pp/leaderkeys
       :keymaps '(normal insert visual emacs)
       :prefix "SPC"
       :global-prefix "C-SPC")
 
-    (pp/leaderKeys
+    (pp/leaderkeys
       "t" '(:ignore t :which-key "toggles")
       "t t" '(counsel-load-theme :which-key "choose themes"))
     (general-evil-setup t))
 #+end_src
 
-** Hunks
+** hunks
 #+begin_src emacs-lisp
-(pp/leaderKeys
-    "] g"   '(git-gutter:next-hunk :which-key "Next hunk")
-    "[ g"   '(git-gutter:previous-hunk :which-key "Prev hunk")
-    "g s"   '(git-gutter:stage-hunk :which-key "Stage hunk")
-    "g r"   '(git-gutter:revert-hunk :which-key "Revert hunk"))
-#+end_src
-** General
-#+begin_src emacs-lisp
-(pp/leaderKeys
-    "SPC"   '(counsel-M-x :which-key "M-x")
-    "c c"   '(compile :which-key "Compile")
-    "c C"   '(recompile :which-key "Recompile")
-    "h r r" '((lambda () (interactive) (load-file "~/.emacs.d/init.el")) :which-key "Reload emacs config")
-    "t l"   '(toggle-truncate-lines :which-key "Toggle truncate lines"))
+(pp/leaderkeys
+    "] g"   '(git-gutter:next-hunk :which-key "next hunk")
+    "[ g"   '(git-gutter:previous-hunk :which-key "prev hunk")
+    "g s"   '(git-gutter:stage-hunk :which-key "stage hunk")
+    "g r"   '(git-gutter:revert-hunk :which-key "revert hunk"))
 #+end_src
 
-** OrgMode
+** general
 #+begin_src emacs-lisp
-(pp/leaderKeys
-       "m *"   '(org-ctrl-c-rtar :which-key "Org-ctrl-c-star")
-       "m +"   '(org-ctrl-c-minus :which-key "Org-ctrl-c-minus")
-       "m ."   '(counsel-org-goto :which-key "Counsel org goto")
-       "m e"   '(org-export-dispatch :which-key "Org export dispatch")
-       "m f"   '(org-footnote-new :which-key "Org footnote new")
-       "m h"   '(org-toggle-heading :which-key "Org toggle heading")
-       "m i"   '(org-toggle-item :which-key "Org toggle item")
-       "m n"   '(org-store-link :which-key "Org store link")
-       "m o"   '(org-set-property :which-key "Org set property")
-       "m t"   '(org-todo :which-key "Org todo")
-       "m x"   '(org-toggle-checkbox :which-key "Org toggle checkbox")
-       "m B"   '(org-babel-tangle :which-key "Org babel tangle")
-       "m I"   '(org-toggle-inline-images :which-key "Org toggle inline imager")
-       "m T"   '(org-todo-list :which-key "Org todo list")
-       "o a"   '(org-agenda :which-key "Org agenda")
+(pp/leaderkeys
+    "SPC"   '(counsel-find-file :which-key "M-x")
+    "c c"   '(compile :which-key "compile")
+    "c c"   '(recompile :which-key "recompile")
+    "h r r" '((lambda () (interactive) (load-file "~/.emacs.d/init.el")) :which-key "reload emacs config")
+    "t l"   '(toggle-truncate-lines :which-key "toggle truncate lines"))
+#+end_src
+
+** orgmode
+#+begin_src emacs-lisp
+(pp/leaderkeys
+       "m *"   '(org-ctrl-c-rtar :which-key "org-ctrl-c-star")
+       "m +"   '(org-ctrl-c-minus :which-key "org-ctrl-c-minus")
+       "m ."   '(counsel-org-goto :which-key "counsel org goto")
+       "m e"   '(org-export-dispatch :which-key "org export dispatch")
+       "m f"   '(org-footnote-new :which-key "org footnote new")
+       "m h"   '(org-toggle-heading :which-key "org toggle heading")
+       "m i"   '(org-toggle-item :which-key "org toggle item")
+       "m n"   '(org-store-link :which-key "org store link")
+       "m o"   '(org-set-property :which-key "org set property")
+       "m t"   '(org-todo :which-key "org todo")
+       "m x"   '(org-toggle-checkbox :which-key "org toggle checkbox")
+       "m b"   '(org-babel-tangle :which-key "org babel tangle")
+       "m i"   '(org-toggle-inline-images :which-key "org toggle inline imager")
+       "m t"   '(org-todo-list :which-key "org todo list")
+       "o a"   '(org-agenda :which-key "org agenda")
        )
 #+end_src
 
-** Dired
+** dired
 #+begin_src emacs-lisp
-(use-package all-the-icons-dired)
-(use-package dired-open)
-(use-package peep-dired)
+(use-package dired
+  :ensure nil
+  :commands (dired dired-jump)
+  :config
+  (setq dired-open-extensions '(("jpg" . "sxiv")
+		("png" . "sxiv")
+		("svg" . "inkscape")
+		("gif" . "sxiv")
+		("pdf" . "evince")
+		("mkv" . "vlc")
+		("mp4" . "vlc"))))
 
-(pp/leaderKeys
-    "d d" '(dired :which-key "Open dired")
-    "d j" '(dired-jump :which-key "Dired jump to current")
-    "d p" '(peep-dired :which-key "Peep-dired"))
+(use-package all-the-icons-dired
+  :after dired)
+(use-package dired-open
+  :after dired)
+(use-package peep-dired
+  :after dired)
+
+(pp/leaderkeys
+    "d d" '(dired :which-key "open dired")
+    "d j" '(dired-jump :which-key "dired jump to current")
+    "d p" '(peep-dired :which-key "peep-dired"))
 
 (with-eval-after-load 'dired
-  ;;(define-key dired-mode-map (kbd "M-p") 'peep-dired)
+  ;;(define-key dired-mode-map (kbd "m-p") 'peep-dired)
   (evil-define-key 'normal dired-mode-map (kbd "h") 'dired-up-directory)
   (evil-define-key 'normal dired-mode-map (kbd "l") 'dired-open-file) ; use dired-find-file instead if not using dired-open package
   (evil-define-key 'normal peep-dired-mode-map (kbd "j") 'peep-dired-next-file)
   (evil-define-key 'normal peep-dired-mode-map (kbd "k") 'peep-dired-prev-file))
 
 (add-hook 'peep-dired-hook 'evil-normalize-keymaps)
-;; Get file icons in dired
+;; get file icons in dired
 (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
-;; With dired-open plugin, you can launch external programs for certain extensions
-;; For example, I set all .png files to open in 'sxiv' and all .mp4 files to open in 'mpv'
-(setq dired-open-extensions '(("jpg" . "sxiv")
-                              ("png" . "sxiv")
-                              ("svg" . "inkscape")
-                              ("gif" . "sxiv")
-                              ("pdf" . "evince")
-                              ("mkv" . "vlc")
-                              ("mp4" . "vlc")))
+;; with dired-open plugin, you can launch external programs for certain extensions
+;; for example, i set all .png files to open in 'sxiv' and all .mp4 files to open in 'mpv'
 #+end_src
 
-** Files
+** files
 #+begin_src emacs-lisp
-(pp/leaderKeys
-    "."     '(projectile-find-file :which-key "Find file in same project")
-    ">"     '(find-file :which-key "Find file")
-    "f f"   '(find-file :which-key "Find file")
-    "f r"   '(counsel-recentf :which-key "Recent files")
-    "f s"   '(save-buffer :which-key "Save file")
-    "f u"   '(sudo-edit-find-file :which-key "Sudo find file")
-    "f C"   '(copy-file :which-key "Copy file")
-    "f D"   '(delete-file :which-key "Delete file")
-    "f R"   '(rename-file :which-key "Rename file")
-    "f S"   '(write-file :which-key "Save file as...")
-    "f U"   '(sudo-edit :which-key "Sudo edit file"))
+(pp/leaderkeys
+    "."     '(projectile-find-file :which-key "find file in same project")
+    ">"     '(find-file :which-key "find file")
+    "f f"   '(find-file :which-key "find file")
+    "f r"   '(counsel-recentf :which-key "recent files")
+    "f s"   '(save-buffer :which-key "save file")
+    "f u"   '(sudo-edit-find-file :which-key "sudo find file")
+    "f c"   '(copy-file :which-key "copy file")
+    "f d"   '(delete-file :which-key "delete file")
+    "f r"   '(rename-file :which-key "rename file")
+    "f s"   '(write-file :which-key "save file as...")
+    "f u"   '(sudo-edit :which-key "sudo edit file"))
 #+end_src
 
-** Buffers
+** buffers
 #+begin_src emacs-lisp
-(pp/leaderKeys
-    ","     '(counsel-projectile-switch-to-buffer :which-key "Switch to buffer in same project")
-    "<"     '(counsel-switch-buffer :which-key "Switch between all buffers")
-    "b b"   '(ibuffer :which-key "Ibuffer")
-    "b c"   '(clone-indirect-buffer-other-window :which-key "Clone indirect buffer other window")
-    "b k"   '(kill-current-buffer :which-key "Kill current buffer")
-    "b n"   '(next-buffer :which-key "Next buffer")
-    "b p"   '(previous-buffer :which-key "Previous buffer")
-    "b B"   '(ibuffer-list-buffers :which-key "Ibuffer list buffers")
-    "b K"   '(kill-buffer :which-key "Kill buffer"))
+(pp/leaderkeys
+    ","     '(counsel-projectile-switch-to-buffer :which-key "switch to buffer in same project")
+    "<"     '(counsel-switch-buffer :which-key "switch between all buffers")
+    "b b"   '(ibuffer :which-key "ibuffer")
+    "b c"   '(clone-indirect-buffer-other-window :which-key "clone indirect buffer other window")
+    "b k"   '(kill-current-buffer :which-key "kill current buffer")
+    "b n"   '(next-buffer :which-key "next buffer")
+    "b p"   '(previous-buffer :which-key "previous buffer")
+    "b b"   '(ibuffer-list-buffers :which-key "ibuffer list buffers")
+    "b k"   '(kill-buffer :which-key "kill buffer"))
 #+end_src
 
-** Zooming in/out
+** zooming in/out
    #+begin_src emacs-lisp
 ;; zoom in/out like we do everywhere else.
 (global-set-key (kbd "C-=") 'text-scale-increase)
@@ -369,7 +428,28 @@ general.el make setting up keybinding a bit easy
 (global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
    #+end_src
 
-* Ivy/Counsel/Swiper
+** window navigation
+#+begin_src emacs-lisp
+(pp/leaderkeys
+    "w l"     '(evil-window-right :which-key "right window")
+    "w j"     '(evil-window-down :which-key "bottom window")
+    "w k"     '(evil-window-up :which-key "top window")
+    "w h"     '(evil-window-left :which-key "left window")
+    "w v"     '(evil-window-vsplit :which-key "left window")
+    "w s"     '(evil-window-split :which-key "left window")
+    "w o"     '(delete-other-windows :which-key "left window")
+    "w c"     '(delete-window :which-key "close window"))
+#+end_src
+
+** terminals
+#+begin_src emacs-lisp
+(pp/leaderkeys
+    "s a"   '(ansi-term :which-key "term")
+    "s t"   '(term :which-key "term")
+    "s v"   '(vterm :which-key "vterm"))
+#+end_src
+
+* ivy/counsel/swiper
 #+begin_src emacs-lisp
 (use-package counsel
   :after ivy
@@ -379,8 +459,8 @@ general.el make setting up keybinding a bit easy
   :defer 0.1
   :diminish
   :bind
-  (("C-c C-r" . ivy-resume)
-   ("C-x B" . ivy-switch-buffer-other-window))
+  (("C-C C-r" . ivy-resume)
+   ("C-x b" . ivy-switch-buffer-other-window))
   :custom
   (setq ivy-count-format "(%d/%d) ")
   (setq ivy-use-virtual-buffers t)
@@ -388,12 +468,25 @@ general.el make setting up keybinding a bit easy
   :config
   (ivy-mode))
 
+(use-package prescient
+  :after counsel
+  :config
+  (setq prescient-sort-length-enable nil)
+  (prescient-persist-mode 1))
+
+(use-package ivy-prescient
+  :after counsel ;; must be loaded after counsel
+  :config
+  (setq ivy-prescient-retain-classic-highlighting t)
+  (ivy-prescient-mode t))
+
 (use-package all-the-icons-ivy-rich
+  :after ivy
   :ensure t
   :init (all-the-icons-ivy-rich-mode 1))
 
 (use-package ivy-rich
-  :after counsel
+  :after ivy
   :init (setq ivy-rich-path-style 'abbrev
               ivy-virtual-abbreviate 'full)
   :config (ivy-rich-mode))
@@ -404,19 +497,21 @@ general.el make setting up keybinding a bit easy
          ("C-r" . swiper)))
 #+end_src
 
-* Git Gutter
+* git gutter
 #+begin_src emacs-lisp
 (use-package git-gutter
+  :defer 0.1
   :diminish
   :hook ((text-mode . git-gutter-mode)
          (prog-mode . git-gutter-mode))
   :config
   (setq git-gutter:update-interval 2)
-  (set-face-foreground 'git-gutter:added "LightGreen")
-  (set-face-foreground 'git-gutter:modified "Blue")
-  (set-face-foreground 'git-gutter:deleted "Red"))
+  (set-face-foreground 'git-gutter:added "lightgreen")
+  (set-face-foreground 'git-gutter:modified "blue")
+  (set-face-foreground 'git-gutter:deleted "red"))
 
 (use-package git-gutter-fringe
+  :defer 0.1
   :diminish git-gutter-mode
   :after git-gutter
   :demand fringe-helper
@@ -436,7 +531,7 @@ general.el make setting up keybinding a bit easy
   nil nil 'center))
   #+end_src
 
-* Projectile
+* projectile
 #+begin_src emacs-lisp
 (use-package projectile
   :diminish projectile-mode
@@ -450,10 +545,14 @@ general.el make setting up keybinding a bit easy
   (setq projectile-switch-project-action #'projectile-dired))
 
 (use-package counsel-projectile
+  :after projectile
   :config (counsel-projectile-mode))
+
+(pp/leaderkeys
+    "p p" '(projectile-switch-project :which-key "switch project"))
 #+end_src
 
-* Magit
+* magit
 #+begin_src emacs-lisp
 ;; (defun me/magit-status ()
 ;;   "removes --git-dir and --work-tree in `magit-git-global-arguments' and calls `magit-status'"
@@ -473,23 +572,23 @@ general.el make setting up keybinding a bit easy
     (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
 (nvmap :prefix "SPC"
-       "g g"   '(magit :which-key "Run magit (magit-status)"))
+       "g g"   '(magit :which-key "run magit (magit-status)"))
 #+end_src
 
-* Dashboard
+* dashboard
 #+begin_src emacs-lisp
 (use-package dashboard
   :init      ;; tweak dashboard config before loading it
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-file-icons t)
-  ;;(setq dashboard-banner-logo-title "Emacs Is More Than A Text Editor!")
+  ;;(setq dashboard-banner-logo-title "emacs is more than a text editor!")
   ;;(setq dashboard-startup-banner 'logo) ;; use standard emacs logo as banner
   (setq dashboard-startup-banner "~/.emacs.d/parth.png")  ;; use custom image as banner
   (setq dashboard-center-content nil) ;; set to 't' for centered content
   (setq dashboard-items '((recents . 5)
                           (agenda . 5 )
                           (bookmarks . 3)
-                          (projects . 3)
+                          (projects . 5)
                           (registers . 3)))
   :config
   (dashboard-setup-startup-hook)
@@ -498,74 +597,106 @@ general.el make setting up keybinding a bit easy
 			      (bookmarks . "book"))))
 #+end_src
 
-* Startup Performance
-** Garbage Collection
+* treemacs
 #+begin_src emacs-lisp
-;; Using garbage magic hack.
- (use-package gcmh
-   :config
-   (gcmh-mode 1))
-;; Setting garbage collection threshold
-(setq gc-cons-threshold 402653184
-      gc-cons-percentage 0.6)
-
-;; Profile emacs startup
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (message "*** Emacs loaded in %s with %d garbage collections."
-                     (format "%.2f seconds"
-                             (float-time
-                              (time-subtract after-init-time before-init-time)))
-                     gcs-done)))
-
-;; Silence compiler warnings as they can be pretty disruptive
-(setq comp-async-report-warnings-errors nil)
-(if (boundp 'comp-deferred-compilation)
-    (setq comp-deferred-compilation nil)
-    (setq native-comp-deferred-compilation nil))
-;; In noninteractive sessions, prioritize non-byte-compiled source files to
-;; prevent the use of stale byte-code. Otherwise, it saves us a little IO time
-;; to skip the mtime checks on every *.elc file.
-(setq load-prefer-newer noninteractive)
-#+end_src
-
-* Neotree
-#+begin_src emacs-lisp
-;; Function for setting a fixed width for neotree.
-;; Defaults to 25 but I make it a bit longer (35) in the 'use-package neotree'.
-(defcustom neo-window-width 25
-  "*Specifies the width of the NeoTree window."
-  :type 'integer
-  :group 'neotree)
-
-(use-package neotree
+(use-package treemacs
+  :ensure t
+  :defer t
   :init
-  (setq neo-smart-open t
-        neo-window-width 30
-        neo-theme (if (display-graphic-p) 'icons 'arrow)
-        ;;neo-window-fixed-size nil
-        inhibit-compacting-font-caches t
-        projectile-switch-project-action 'neotree-projectile-action) 
-        ;; truncate long file names in neotree
-        (add-hook 'neo-after-create-hook
-           #'(lambda (_)
-               (with-current-buffer (get-buffer neo-buffer-name)
-                 (setq truncate-lines t)
-                 (setq word-wrap nil)
-                 (make-local-variable 'auto-hscroll-mode)
-                 (setq auto-hscroll-mode nil)))))
+  (with-eval-after-load 'winum
+    (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+  :config
+  (progn
+    (setq treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
+          treemacs-deferred-git-apply-delay      0.5
+          treemacs-directory-name-transformer    #'identity
+          treemacs-display-in-side-window        t
+          treemacs-eldoc-display                 t
+          treemacs-file-event-delay              5000
+          treemacs-file-extension-regex          treemacs-last-period-regex-value
+          treemacs-file-follow-delay             0.2
+          treemacs-file-name-transformer         #'identity
+          treemacs-follow-after-init             t
+          treemacs-expand-after-init             t
+          treemacs-git-command-pipe              ""
+          treemacs-goto-tag-strategy             'refetch-index
+          treemacs-indentation                   2
+          treemacs-indentation-string            " "
+          treemacs-is-never-other-window         nil
+          treemacs-max-git-entries               5000
+          treemacs-missing-project-action        'ask
+          treemacs-move-forward-on-expand        nil
+          treemacs-no-png-images                 nil
+          treemacs-no-delete-other-windows       t
+          treemacs-project-follow-cleanup        nil
+          treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+          treemacs-position                      'left
+          treemacs-read-string-input             'from-child-frame
+          treemacs-recenter-distance             0.1
+          treemacs-recenter-after-file-follow    nil
+          treemacs-recenter-after-tag-follow     nil
+          treemacs-recenter-after-project-jump   'always
+          treemacs-recenter-after-project-expand 'on-distance
+          treemacs-litter-directories            '("/node_modules" "/.venv" "/.cask" "/build")
+          treemacs-show-cursor                   nil
+          treemacs-show-hidden-files             t
+          treemacs-silent-filewatch              nil
+          treemacs-silent-refresh                nil
+          treemacs-sorting                       'alphabetic-asc
+          treemacs-space-between-root-nodes      t
+          treemacs-tag-follow-cleanup            t
+          treemacs-tag-follow-delay              1.5
+          treemacs-user-mode-line-format         nil
+          treemacs-user-header-line-format       nil
+          treemacs-width                         35
+          treemacs-workspace-switch-cleanup      nil)
 
-;; show hidden files
-(setq-default neo-show-hidden-files t)
+    ;; The default width and height of the icons is 22 pixels. If you are
+    ;; using a Hi-DPI display, uncomment this to double the icon size.
+    ;;(treemacs-resize-icons 44)
 
-(nvmap :prefix "SPC"
-       "t n"   '(neotree-toggle :which-key "Toggle neotree file viewer")
-       "d n"   '(neotree-dir :which-key "Open directory in neotree"))
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (pcase (cons (not (null (executable-find "git")))
+                 (not (null treemacs-python-executable)))
+      (`(t . t)
+       (treemacs-git-mode 'deferred))
+      (`(t . _)
+       (treemacs-git-mode 'simple))))
+  :bind
+  (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
 
+(pp/leaderkeys
+    "o p" '(treemacs :which-key "treemacs")
+    "o f" '(treemacs-find-file :which-key "find file"))
+
+(use-package treemacs-evil
+  :after (treemacs evil)
+  :ensure t)
+
+(use-package treemacs-projectile
+  :after (treemacs projectile)
+  :ensure t)
+
+(use-package treemacs-icons-dired
+  :after (treemacs dired)
+  :ensure t
+  :config (treemacs-icons-dired-mode))
+
+(use-package treemacs-magit
+  :after (treemacs magit)
+  :ensure t)
 #+end_src
 
-* Language Support
-** Language Servers
+* language support
+** language servers
 #+begin_src emacs-lisp
 (use-package lsp-mode
   :commands (lsp lsp-deferred)
@@ -581,7 +712,7 @@ general.el make setting up keybinding a bit easy
 ;;(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
 #+end_src
 
-** Company Mode
+** company mode
 #+begin_src emacs-lisp
 (use-package company
   :after lsp-mode
@@ -596,15 +727,20 @@ general.el make setting up keybinding a bit easy
 
 (use-package company-box
   :hook (company-mode . company-box-mode))
+
+(use-package company-prescient
+  :after company
+  :config
+  (company-prescient-mode t))
 #+end_src
 
-** C/C++
+** c/c++
 #+begin_src emacs-lisp
 (add-hook 'c-mode-hook 'lsp-deferred)
 (add-hook 'c++-mode-hook 'lsp-deferred)
 #+end_src
 
-** Markdown
+** markdown
 #+begin_src emacs-lisp
 (use-package markdown-mode
   :mode "\\.md\\'"
@@ -624,22 +760,54 @@ general.el make setting up keybinding a bit easy
   (add-hook 'markdown-mode-hook 'dw/markdown-mode-hook))
 #+end_src
 
-* Misc
-** Delete Selection Mode
+* misc
+** delete selection mode
 #+begin_src emacs-lisp
     (delete-selection-mode t)
 #+end_src
   
-** Remove Toolbars
+** remove toolbars
 #+begin_src emacs-lisp
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 #+end_src
 
-** Line Numbers
+** line numbers
 #+begin_src emacs-lisp
 (global-display-line-numbers-mode 1)
 (setq display-line-numbers 'relative)
 (global-visual-line-mode t)
 #+end_src
+
+* terminals
+** term-mode
+#+begin_src emacs-lisp
+(use-package term
+  :commands term
+  :init
+  (setq explicit-shell-file-name "bash")
+  (setq set-term-prompt-regexp "^[^#$%>\n]*[#$%>] *")
+  :config)
+
+(use-package eterm-256color
+  :hook (term-mode . eterm-256color-mode))
+#+end_src
+
+** vterm
+#+begin_src emacs-lisp
+(use-package vterm
+  :commands vterm
+  :config
+  (setq vterm-max-srollback 10000)
+  (setq vtem-shell "zsh")
+  (setq set-term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
+
+(add-hook 'vterm-mode #'pp/removeLineNumbers)
+#+end_src
+
+* Runtime Performance
+  #+begin_src emacs-lisp
+;; runtime performance
+(setq gc-cons-threshold (* 2 1000 1000))
+  #+end_src
