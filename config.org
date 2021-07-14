@@ -86,7 +86,7 @@
 (setq frame-resize-pixelwise t)
 
 (setq redisplay-dont-pause t
-  scroll-margin 1
+  scroll-margin 3
   scroll-step 1
   scroll-conservatively 10000
   scroll-preserve-screen-position 1)
@@ -402,6 +402,7 @@ general.el make setting up keybinding a bit easy
     "f d"   '(delete-file :which-key "delete file")
     "f r"   '(rename-file :which-key "rename file")
     "f s"   '(write-file :which-key "save file as...")
+    "f t"   '(ff-find-other-file :which-key "open other file")
     "f u"   '(sudo-edit :which-key "sudo edit file"))
 #+end_src
 
@@ -677,6 +678,8 @@ general.el make setting up keybinding a bit easy
     "o p" '(treemacs :which-key "treemacs")
     "o f" '(treemacs-find-file :which-key "find file"))
 
+(add-hook 'projectile-after-switch-project-hook 'treemacs-display-current-project-exclusively)
+
 (use-package treemacs-evil
   :after (treemacs evil)
   :ensure t)
@@ -706,10 +709,20 @@ general.el make setting up keybinding a bit easy
   (lsp-enable-which-key-integration t))
 
 (use-package lsp-ui
-  :hook (lsp-mode . lsp-ui-mode))
+  :hook (lsp-mode . lsp-ui-mode)
+  :config
+  (setq lsp-ui-doc-enable nil))
 
 (use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
-;;(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+#+end_src
+
+** flycheck
+#+begin_src emacs-lisp
+(use-package flycheck
+  :hook (lsp-mode . flycheck-mode)
+  :ensure t
+  :init (global-flycheck-mode))
 #+end_src
 
 ** company mode
@@ -778,6 +791,11 @@ general.el make setting up keybinding a bit easy
 (global-display-line-numbers-mode 1)
 (setq display-line-numbers 'relative)
 (global-visual-line-mode t)
+#+end_src
+
+** show matching parenthesis
+#+begin_src emacs-lisp
+(show-paren-mode t)
 #+end_src
 
 * terminals
